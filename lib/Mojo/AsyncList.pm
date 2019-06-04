@@ -4,6 +4,8 @@ use Mojo::Base 'Mojo::EventEmitter';
 use Mojo::IOLoop;
 use Time::HiRes ();
 
+our $VERSION = '0.01';
+
 has concurrent => 0;
 has ioloop     => sub { Mojo::IOLoop->singleton };
 has offset     => 1;
@@ -81,7 +83,7 @@ Mojo::AsyncList - Process a list with callbacks
   my $async_list = Mojo::AsyncList->new(
     sub { # Specify a "item" event handler
       my ($async_list, $username, $gather_cb) = @_;
-      $db->select({username => $username}, $gather_cb);
+      $db->select("users", {username => $username}, $gather_cb);
     },
     sub { # Specify a "finish" event handler
       my $async_list = shift;
@@ -142,6 +144,17 @@ Will remove the number of arguments passed on to <$gather_cb>, used in the
 L</item> event. Default to "1", meaning it will remove the invocant.
 
 =head1 METHODS
+
+=head2 new
+
+  $async_list = Mojo::AsyncList->new;
+  $async_list = Mojo::AsyncList->new(@attrs);
+  $async_list = Mojo::AsyncList->new(\%attrs);
+  $async_list = Mojo::AsyncList->new($item_cb, $finish_cb);
+  $async_list = Mojo::AsyncList->new($item_cb, $finish_cb, \%attrs);
+
+Used to create a new L<Mojo::AsyncList> object. L</item> and L<finish> event
+callbacks can be provided when constructing the object.
 
 =head2 process
 
