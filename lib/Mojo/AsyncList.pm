@@ -1,9 +1,11 @@
 package Mojo::AsyncList;
 use Mojo::Base 'Mojo::EventEmitter';
 
+use Mojo::IOLoop;
 use Time::HiRes ();
 
 has concurrent => 0;
+has ioloop     => sub { Mojo::IOLoop->singleton };
 has offset     => 1;
 
 sub new {
@@ -37,10 +39,20 @@ sub process {
     };
   };
 
-  $self->emit(item => $items->[$item_pos++], $gather_cb->())
-    for 1 .. ($self->concurrent || @$items);
+  $self->ioloop->next_tick(sub {
+    $self->emit(item => $items->[$item_pos++], $gather_cb->())
+      for 1 .. ($self->concurrent || @$items);
+  });
 
   return $self;
+}
+
+sub wait {
+  my $self = shift;
+  return if (my $loop = $self->ioloop)->is_running;
+  my $done;
+  $self->on(finish => sub { $done++; $loop->stop });
+  $loop->start until $done;
 }
 
 1;
@@ -71,6 +83,7 @@ Mojo::AsyncList - Process a list with callbacks
   my @users = qw(supergirl superman batman);
   $async_list->concurrent(2);
   $async_list->process(\@users);
+  $async_list->wait;
 
 =head1 DESCRIPTION
 
@@ -127,6 +140,14 @@ L</item> event. Default to "1", meaning it will remove the invocant.
   $async_list = $async_list->process([@items]);
 
 Process C<$items> and emit L</EVENTS> while doing so.
+
+=head2 wait
+
+  $async_list->concurrent(2)->process(\@items)->wait;
+  $async_list->wait;
+
+Used to block and wait until L<Mojo::AsyncList> is done with the C<$items>
+passed on to L</process>.
 
 =head1 AUTHOR
 
