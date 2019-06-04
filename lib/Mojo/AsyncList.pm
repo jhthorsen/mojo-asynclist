@@ -25,15 +25,19 @@ sub process {
   my $remaining = int @$items;
   my ($gather_cb, $item_pos, $pos, @res) = (undef, 0, 0);
 
+  my $stats = $self->{stats}
+    = {done => 0, remaining => int(@$items), t0 => [Time::HiRes::gettimeofday]};
+
   $gather_cb = sub {
     my $res_pos = $pos++;
 
     return sub {
       shift for 1 .. $self->offset;
-      $remaining--;
+      $stats->{done}++;
+      $stats->{remaining}--;
       $res[$res_pos] = [@_];
       $self->emit(result => @_);
-      return $self->emit(finish => @res) unless $remaining;
+      return $self->emit(finish => @res) unless $stats->{remaining};
       return $self->emit(item   => $items->[$item_pos++], $gather_cb->())
         if $item_pos < @$items;
     };
@@ -45,6 +49,11 @@ sub process {
   });
 
   return $self;
+}
+
+sub stats {
+  my ($self, $key) = @_;
+  return $key ? $self->{stats}{$key} // 0 : $self->{stats};
 }
 
 sub wait {
@@ -140,6 +149,22 @@ L</item> event. Default to "1", meaning it will remove the invocant.
   $async_list = $async_list->process([@items]);
 
 Process C<$items> and emit L</EVENTS> while doing so.
+
+=head2 stats
+
+  $int          = $async_list->stats("done");
+  $int          = $async_list->stats("remaining");
+  $gettimeofday = $async_list->stats("t0");
+  $hash_ref     = $async_list->stats;
+
+Used to extract stats while items are processing. This can be useful inside the
+L</EVENTS>, or within a recurring timer:
+
+  Mojo::IOLoop->recurring(1 => sub {
+    warn sprintf "[%s] done: %s\n", time, $async_list->stats("done");
+  });
+
+Changing the C<$hash_ref> will have fatal consequences.
 
 =head2 wait
 
