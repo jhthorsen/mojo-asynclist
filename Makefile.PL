@@ -20,7 +20,7 @@ my %WriteMakefileArgs = (
       homepage   => 'https://github.com/jhthorsen/mojo-asynclist',
       repository => {
         type => 'git',
-        url  => 'https://github.com/jhthorsen/mojo-asynclist',
+        url  => 'https://github.com/jhthorsen/mojo-asynclist.git',
         web  => 'https://github.com/jhthorsen/mojo-asynclist',
       },
     },

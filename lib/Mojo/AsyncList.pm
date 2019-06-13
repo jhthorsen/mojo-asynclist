@@ -4,7 +4,7 @@ use Mojo::Base 'Mojo::EventEmitter';
 use Mojo::IOLoop;
 use Time::HiRes ();
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 has concurrent => 0;
 has ioloop     => sub { Mojo::IOLoop->singleton };
